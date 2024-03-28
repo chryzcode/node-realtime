@@ -31,6 +31,12 @@ io.on("connection", socket => {
 
     //broadcast when a user connects to everyone except the newly joined client
     socket.broadcast.to(user.room).emit("message", formatMessage(botName, `${user.username} has joined the chat`));
+
+    // Send users and room info
+    io.to(user.room).emit("roomUsers", {
+      room: user.room,
+      users: getRoomUsers(user.room),
+    });
   });
 
   socket.on("chatMessage", msg => {
