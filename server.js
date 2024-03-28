@@ -5,6 +5,7 @@ import url from "url";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { formatMessage } from "./utils/messages.js";
+import { userJoin, getCurrentUser, userLeave, getRoomUsers } from "./utils/users.js";
 
 const app = express();
 const server = createServer(app);
@@ -22,20 +23,22 @@ const botName = "The App Bot";
 //run when client connect
 
 io.on("connection", socket => {
-  // Welcome the current user
-  socket.emit("message", formatMessage(botName, "Welcome!"));
+  socket.on("joinRoom", (username, room) => {
+    // Welcome the current user
+    socket.emit("message", formatMessage(botName, "Welcome!"));
 
-  //broadcast when a user connects to everyone except the newly joined client
-  socket.broadcast.emit("message", formatMessage(botName, "A user has joined the chat"));
+    //broadcast when a user connects to everyone except the newly joined client
+    socket.broadcast.emit("message", formatMessage(botName, "A user has joined the chat"));
+  });
+
+  socket.on("chatMessage", msg => {
+    io.emit("message", formatMessage("USER", msg));
+  });
 
   //Runs when the client disconnects
   socket.on("disconnect", () => {
     // to everyone chat room
     io.emit("message", formatMessage(botName, "A user has left the chat"));
-  });
-
-  socket.on("chatMessage", msg => {
-    io.emit("message", formatMessage("USER", msg));
   });
 });
 
