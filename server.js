@@ -23,22 +23,35 @@ const botName = "The App Bot";
 //run when client connect
 
 io.on("connection", socket => {
-  socket.on("joinRoom", (username, room) => {
+  socket.on("joinRoom", ({ username, room }) => {
+    const user = userJoin(socket.id, username, room);
+    socket.join(user.room);
     // Welcome the current user
     socket.emit("message", formatMessage(botName, "Welcome!"));
 
     //broadcast when a user connects to everyone except the newly joined client
-    socket.broadcast.emit("message", formatMessage(botName, "A user has joined the chat"));
+    socket.broadcast.to(user.room).emit("message", formatMessage(botName, `${user.username} has joined the chat`));
   });
 
   socket.on("chatMessage", msg => {
-    io.emit("message", formatMessage("USER", msg));
+    const user = getCurrentUser(socket.id);
+    io.to(user.room).emit("message", formatMessage(user.username, msg));
   });
 
   //Runs when the client disconnects
   socket.on("disconnect", () => {
     // to everyone chat room
-    io.emit("message", formatMessage(botName, "A user has left the chat"));
+    const user = userLeave(socket.id);
+
+    if (user) {
+      io.to(user.room).emit("message", formatMessage(botName, `${user.username} has left the chat`));
+
+      // Send users and room info
+      io.to(user.room).emit("roomUsers", {
+        room: user.room,
+        users: getRoomUsers(user.room),
+      });
+    }
   });
 });
 
